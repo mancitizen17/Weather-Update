@@ -1,4 +1,4 @@
-#﻿# Daily Weather Alert System using Google Apps Script
+﻿# Daily Weather Alert System using Google Apps Script
 
 This Google Apps Script project automatically fetches the weather forecast for tomorrow and sends a detailed email report and an SMS alert if special conditions are met. It's a useful utility for staying ahead of the weather without needing to check an app every day.
 
@@ -21,7 +21,7 @@ The script is designed to run automatically as a scheduled job, making it a "set
 
 ---
 
-### 🛠️ Technologies Used
+###  Technologies Used
 
 * **Google Apps Script**: The core platform for running the script.
 * **OpenWeatherMap API**: Used to fetch accurate weather forecast data.
@@ -53,4 +53,5 @@ The script is designed to run automatically as a scheduled job, making it a "set
 
 Once configured, the script will run every morning at the designated time, and you'll receive your daily weather forecast directly in your inbox and a quick text on your phone!
  
+
 
