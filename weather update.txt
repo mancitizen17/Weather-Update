@@ -1,0 +1,277 @@
+function checkWeatherAndSendAlert() {
+  const API_KEY = "XXXXXXXXXXXXXX"; 
+  const LAT = "XXXXXXXXXXXXXX"; 
+  const LON = "XXXXXXXXXXXXXX"; 
+  const YOUR_EMAIL = "XXXXXXXXXXXXXX";
+  const PHONE_NUMBER = "XXXXXXXXXXXXXX"; 
+  const TWILIO_ACCOUNT_SID = "XXXXXXXXXXXXXX";
+  const TWILIO_AUTH_TOKEN = "XXXXXXXXXXXXXX"; 
+  const TWILIO_PHONE_NUMBER = "XXXXXXXXXXXXXX"; 
+  
+  try {
+    // Fetch weather data
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric`;
+    const weatherResponse = UrlFetchApp.fetch(weatherUrl);
+    const weatherData = JSON.parse(weatherResponse.getContentText());
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowDateStr = tomorrow.toISOString().split('T')[0];
+    
+    // Initialize variables
+    let forecasts = [];
+    let tempMin = Infinity;
+    let tempMax = -Infinity;
+    let humidityTotal = 0;
+    let windTotal = 0;
+    let rainTotal = 0;
+    let forecastCount = 0;
+    let specialMessage = "";
+    
+    // Process weather data for tomorrow (only 12:00 and 18:00)
+    weatherData.list.forEach(forecast => {
+      const forecastDate = forecast.dt_txt.split(' ')[0];
+      const forecastHour = parseInt(forecast.dt_txt.split(' ')[1].substring(0, 2));
+      
+      if (forecastDate === tomorrowDateStr && (forecastHour === 12 || forecastHour === 18)) {
+        const currentTemp = forecast.main.temp;
+        tempMin = Math.min(tempMin, currentTemp);
+        tempMax = Math.max(tempMax, currentTemp);
+        humidityTotal += forecast.main.humidity;
+        windTotal += forecast.wind.speed;
+        if (forecast.rain && forecast.rain['3h']) {
+          rainTotal += forecast.rain['3h'];
+        }
+        forecastCount++;
+        
+        forecasts.push({
+          time: forecast.dt_txt.split(' ')[1].substring(0, 5),
+          hour: forecastHour,
+          temp: Math.round(currentTemp),
+          feels_like: Math.round(forecast.main.feels_like),
+          weather: forecast.weather[0].main,
+          description: forecast.weather[0].description,
+          humidity: forecast.main.humidity,
+          wind: Math.round(forecast.wind.speed * 3.6),
+          pop: forecast.pop ? Math.round(forecast.pop * 100) : 0
+        });
+      }
+    });
+    
+    // Calculate averages
+    const avgHumidity = Math.round(humidityTotal / forecastCount);
+    const avgWind = Math.round((windTotal / forecastCount) * 3.6);
+    const tempAvg = Math.round((tempMin + tempMax) / 2);
+    
+    // Determine special message based on conditions
+    let smsSpecialMessage = "";
+    if (tempMax > 40) {
+      specialMessage = `IMPORTANT: Extreme heat expected tomorrow (max ${tempMax}°C). Avoid outdoor activities!`;
+      smsSpecialMessage = "EXTREME HEAT: Stay indoors!";
+    }
+    
+    // Clothing recommendation
+    let clothing = "Light breathable clothing";
+    if (tempMax < 20) clothing = "Jacket or sweater";
+    if (tempMax < 10) clothing = "Heavy jacket, gloves, hat";
+    
+    // Create temperature chart configuration
+    const chartConfig = {
+      type: 'line',
+      data: {
+        labels: forecasts.map(f => f.time),
+        datasets: [
+          {
+            label: 'Temperature (°C)',
+            data: forecasts.map(f => f.temp),
+            borderColor: '#FF7F00', // Orange
+            backgroundColor: 'rgba(255, 127, 0, 0.1)',
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Feels Like (°C)',
+            data: forecasts.map(f => f.feels_like),
+            borderColor: '#800080', // Purple
+            backgroundColor: 'rgba(128, 0, 128, 0.1)',
+            tension: 0.4,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Temperature Trend',
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Temperature (°C)'
+            }
+          }
+        }
+      }
+    };
+    
+    // Encode chart configuration for URL
+    const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&width=600&height=300&backgroundColor=white`;
+    
+    // Create email content (HTML version) - with graph
+    let htmlBody = `
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px;">
+            Tomorrow's Weather Forecast (${tomorrow.toDateString()})
+          </h1>
+          
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong style="color: #202124;">Location</strong>: Ahmedabad, India</p>
+            <p><strong style="color: #202124;">Temperature</strong>: ${Math.round(tempMin)}°C to ${Math.round(tempMax)}°C (Avg ${tempAvg}°C, ${tempAvg-28}°C warmer than usual)</p>
+            <p><strong style="color: #202124;">Humidity</strong>: ${avgHumidity}%</p>
+            <p><strong style="color: #202124;">Wind</strong>: ${avgWind} km/h</p>
+          </div>
+          
+          <!-- Temperature Graph -->
+          <div style="margin: 20px 0; text-align: center;">
+            <img src="${chartUrl}" alt="Temperature Chart" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+          </div>
+          
+          <h2 style="color: #1a73e8; margin-top: 25px;">Hourly Forecast</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+            <thead>
+              <tr style="background-color: #f1f3f4; text-align: left;">
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Time</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Temp (°C)</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Feels Like</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Conditions</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Wind (km/h)</th>
+                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Rain %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${forecasts.map(f => `
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.time}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.temp}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.feels_like}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.description}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.wind}</td>
+                  <td style="padding: 10px; border-bottom: 1px solid #eee;">${f.pop}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h3 style="color: #1a73e8;">Recommendations</h3>
+          <ul style="padding-left: 20px;">
+            <li>Avoid outdoor time: ${forecasts[0].time} (${forecasts[0].temp}°C, ${forecasts[0].wind} km/h wind)</li>
+            <li>Suggested clothing: ${clothing}</li>
+            ${tempMax > 35 ? '<li>Avoid outdoor activities between 11AM-4PM</li><li>Wear light, loose-fitting clothing</li>' : ''}
+          </ul>
+          
+          ${specialMessage ? `
+          <div style="background-color: #fce8e6; color: #d93025; padding: 15px; border-radius: 8px; margin: 25px 0; font-weight: bold; border-left: 4px solid #d93025;">
+            ${specialMessage}
+          </div>
+          ` : ''}
+          
+          <p style="text-align: center; color: #5f6368; font-style: italic; margin-top: 30px;">
+            Stay prepared and have a great day!
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+    
+    // Create plain text version as fallback
+    let plainBody = `Tomorrow's Weather Forecast (${tomorrow.toDateString()})\n\n`;
+    plainBody += `Location: Ahmedabad, India\n`;
+    plainBody += `Temperature: ${Math.round(tempMin)}°C to ${Math.round(tempMax)}°C (Avg ${tempAvg}°C)\n`;
+    plainBody += `Humidity: ${avgHumidity}%\n`;
+    plainBody += `Wind: ${avgWind} km/h\n`;
+    
+    plainBody += `\nHourly Forecast:\n`;
+    plainBody += `Time\tTemp\tFeels Like\tConditions\t\tWind\tRain %\n`;
+    plainBody += `--------------------------------------------------\n`;
+    forecasts.forEach(f => {
+      plainBody += `${f.time}\t${f.temp}°C\t${f.feels_like}°C\t${f.description.padEnd(15)}\t${f.wind} km/h\t${f.pop}%\n`;
+    });
+    
+    plainBody += `\nRecommendations:\n`;
+    plainBody += `- Avoid outdoor time: ${forecasts[0].time} (${forecasts[0].temp}°C)\n`;
+    plainBody += `- Suggested clothing: ${clothing}\n`;
+    if (tempMax > 35) {
+      plainBody += `- Avoid outdoor activities between 11AM-4PM\n`;
+      plainBody += `- Wear light, loose-fitting clothing\n`;
+    }
+    
+    if (specialMessage) plainBody += `\n${specialMessage}\n`;
+    plainBody += `\nStay prepared and have a great day!`;
+    
+    // Send email
+    GmailApp.sendEmail(YOUR_EMAIL, 
+                      `Tomorrow's Weather Forecast: ${tomorrow.toDateString()}`, 
+                      plainBody, 
+                      { htmlBody: htmlBody });
+    
+    // Create SMS content
+    const smsBody = `Weather Alert (${tomorrow.toDateString().substring(0, 10)})\n` +
+                    `Ahmedabad: ${Math.round(tempMin)}°C-${Math.round(tempMax)}°C\n` +
+                    `Wind: ${avgWind}km/h, Hum: ${avgHumidity}%\n` +
+                    `${smsSpecialMessage || 'Normal weather expected'}`;
+    
+    // Send SMS via Twilio
+    if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+      const options = {
+        method: "post",
+        headers: {
+          Authorization: "Basic " + Utilities.base64Encode(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
+        },
+        payload: {
+          From: TWILIO_PHONE_NUMBER,
+          To: PHONE_NUMBER,
+          Body: smsBody
+        }
+      };
+      
+      UrlFetchApp.fetch(twilioUrl, options);
+    }
+    
+    console.log("Weather forecast and SMS sent successfully!");
+    
+  } catch (error) {
+    console.error("Error: " + error.toString());
+    GmailApp.sendEmail(YOUR_EMAIL, 
+                      "Weather Forecast Error", 
+                      "Failed to fetch weather data. Error details:\n\n" + error.toString());
+  }
+}
+
+// Set up daily trigger at 5 AM
+function createDailyTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => ScriptApp.deleteTrigger(trigger));
+  
+  ScriptApp.newTrigger("checkWeatherAndSendAlert")
+    .timeBased()
+    .atHour(5)
+    .nearMinute(0)
+    .everyDays(1)
+    .create();
+  
+  console.log("Daily trigger set for 5 AM");
+}
