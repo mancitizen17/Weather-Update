@@ -8,7 +8,7 @@ The script is designed to run automatically as a scheduled job, making it a "set
 
 ### 🚀 Live Demo
 
-**[View the live dashboard](https://script.google.com/macros/s/AKfycbyGuTeblHfxiNmz2bcO-1_-x9PLXBcauxO709X1TgdelPMQbLU2qAbP4wUjilpyeGdm/exec)**
+[View the live dashboard](https://script.google.com/macros/s/AKfycbyGuTeblHfxiNmz2bcO-1_-x9PLXBcauxO709X1TgdelPMQbLU2qAbP4wUjilpyeGdm/exec)
 
 Status: ✅ Deployed and working — click "Refresh Weather" on the page to pull tomorrow's live forecast. The same backend also sends a daily email (and optional SMS) automatically at ~5 AM.
 
