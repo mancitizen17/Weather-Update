@@ -1,8 +1,16 @@
-﻿# Daily Weather Alert System using Google Apps Script
+# Daily Weather Alert System using Google Apps Script
 
 This Google Apps Script project automatically fetches the weather forecast for tomorrow and sends a detailed email report and an SMS alert if special conditions are met. It's a useful utility for staying ahead of the weather without needing to check an app every day.
 
 The script is designed to run automatically as a scheduled job, making it a "set it and forget it" solution for your daily weather needs.
+
+---
+
+### 🚀 Live Demo
+
+**[View the live dashboard](https://script.google.com/macros/s/AKfycbyGuTeblHfxiNmz2bcO-1_-x9PLXBcauxO709X1TgdelPMQbLU2qAbP4wUjilpyeGdm/exec)**
+
+Status: ✅ Deployed and working — click "Refresh Weather" on the page to pull tomorrow's live forecast. The same backend also sends a daily email (and optional SMS) automatically at ~5 AM.
 
 ---
 
@@ -41,17 +49,18 @@ The script is designed to run automatically as a scheduled job, making it a "set
 #### Setup Instructions
 
 1.  Go to **Google Apps Script** (script.google.com).
-2.  Click **"New project"** and paste the entire code into the editor.
-3.  **Configure your settings:** Replace the placeholder variables at the top of the `checkWeatherAndSendAlert` function with your specific information:
-    * `API_KEY`: Your OpenWeatherMap API key.
-    * `LAT` & `LON`: Latitude and longitude of your location.
+2.  Click **"New project"** and add `Code.gs` and `Index.html` with the contents from this repo.
+3.  **Configure your settings** in **Project Settings → Script Properties** (not hardcoded in the code):
+    * `OPENWEATHER_API_KEY`: Your OpenWeatherMap API key.
+    * `LAT` & `LON`: Latitude and longitude of your location (optional — defaults to Ahmedabad, India).
     * `YOUR_EMAIL`: The email address where you want to receive the forecast.
-    * `PHONE_NUMBER`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`: Your Twilio credentials for SMS alerts.
+    * `PHONE_NUMBER`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`: Your Twilio credentials for SMS alerts (optional).
 4.  **Save the project.**
-5.  Run the `createDailyTrigger` function once. This will set up the daily automation.
-6.  You will be prompted to authorize the script to access external services (like sending emails and fetching URLs). Grant the necessary permissions.
+5.  Run the `checkConfiguration` function once to confirm all properties were picked up correctly (check the execution log).
+6.  Run the `createDailyTrigger` function once. This will set up the daily automation.
+7.  You will be prompted to authorize the script to access external services (like sending emails and fetching URLs). Grant the necessary permissions.
+8.  **Deploy as a web app:** Deploy → New deployment → Web app → set "Who has access" → Deploy. Use the resulting `/exec` URL for the live dashboard.
 
-Once configured, the script will run every morning at the designated time, and you'll receive your daily weather forecast directly in your inbox and a quick text on your phone!
- 
+Once configured, the script will run every morning at the designated time, and you'll receive your daily weather forecast directly in your inbox and a quick text on your phone! Whenever you update `Code.gs` or `Index.html`, remember to create a **new deployment version** (Deploy → Manage deployments → Edit → New version) — just saving the code does not update the live URL.
 
 
