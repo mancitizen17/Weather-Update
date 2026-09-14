@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <base target="_top">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>Daily Weather Alert System</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background:
+        linear-gradient(
+          135deg,
+          #eff6ff 0%,
+          #f8fafc 50%,
+          #fff7ed 100%
+        );
+
+      color: #172033;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1050px, 92%);
+      margin: auto;
+      padding: 45px 0 60px;
+    }
+
+    /* Header */
+
+    .header {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      background: #dbeafe;
+      color: #1d4ed8;
+
+      padding: 7px 13px;
+      border-radius: 999px;
+
+      font-size: 13px;
+      font-weight: 600;
+
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      margin: 0;
+
+      font-size: clamp(32px, 5vw, 52px);
+      letter-spacing: -1.5px;
+
+      color: #0f172a;
+    }
+
+    .subtitle {
+      max-width: 650px;
+      margin: 14px auto 0;
+
+      color: #64748b;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    /* Main card */
+
+    .main-card {
+      background: rgba(255,255,255,0.92);
+
+      border: 1px solid #e2e8f0;
+
+      border-radius: 22px;
+
+      box-shadow:
+        0 20px 50px rgba(15, 23, 42, 0.08);
+
+      overflow: hidden;
+    }
+
+    .card-top {
+      padding: 28px;
+
+      border-bottom: 1px solid #e2e8f0;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 20px;
+
+      flex-wrap: wrap;
+    }
+
+    .location {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .location-icon {
+      width: 45px;
+      height: 45px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 13px;
+
+      background: #eff6ff;
+
+      font-size: 22px;
+    }
+
+    .location h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .location p {
+      margin: 3px 0 0;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .run-button {
+      border: none;
+
+      background:
+        linear-gradient(
+          135deg,
+          #2563eb,
+          #4f46e5
+        );
+
+      color: white;
+
+      padding: 13px 21px;
+
+      border-radius: 11px;
+
+      font-size: 14px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 8px 20px rgba(37, 99, 235, 0.25);
+
+      transition:
+        transform .2s,
+        box-shadow .2s;
+    }
+
+    .run-button:hover {
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 12px 25px rgba(37, 99, 235, 0.3);
+    }
+
+    .run-button:disabled {
+      opacity: .65;
+      cursor: wait;
+      transform: none;
+    }
+
+    /* Loading */
+
+    #loading {
+      display: none;
+      padding: 60px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+
+      border: 4px solid #e2e8f0;
+      border-top-color: #2563eb;
+
+      border-radius: 50%;
+
+      animation: spin .8s linear infinite;
+
+      margin: auto auto 15px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Results */
+
+    #results {
+      display: none;
+    }
+
+    .results {
+      padding: 28px;
+    }
+
+    /* Stats */
+
+    .stats {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 14px;
+
+      margin-bottom: 25px;
+    }
+
+    .stat {
+      padding: 20px;
+
+      border: 1px solid #e2e8f0;
+
+      border-radius: 15px;
+
+      background: #fff;
+    }
+
+    .stat-label {
+      color: #64748b;
+
+      font-size: 13px;
+
+      margin-bottom: 7px;
+    }
+
+    .stat-value {
+      font-size: 25px;
+
+      font-weight: 750;
+
+      color: #0f172a;
+    }
+
+    /* Alert */
+
+    .alert {
+      display: none;
+
+      padding: 17px 19px;
+
+      border-radius: 14px;
+
+      margin-bottom: 25px;
+
+      border-left: 4px solid;
+    }
+
+    .alert.extreme {
+      background: #fff1f2;
+      border-color: #e11d48;
+      color: #9f1239;
+    }
+
+    .alert.warning {
+      background: #fff7ed;
+      border-color: #f97316;
+      color: #9a3412;
+    }
+
+    .alert-title {
+      font-weight: 750;
+      margin-bottom: 4px;
+    }
+
+    /* Chart */
+
+    .section {
+      margin-top: 30px;
+    }
+
+    .section-title {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      margin-bottom: 15px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+
+      font-size: 20px;
+    }
+
+    .chart-container {
+      border: 1px solid #e2e8f0;
+
+      border-radius: 16px;
+
+      padding: 15px;
+
+      background: white;
+    }
+
+    .chart-container img {
+      display: block;
+
+      width: 100%;
+
+      max-height: 370px;
+
+      object-fit: contain;
+    }
+
+    /* Forecast table */
+
+    .table-wrapper {
+      overflow-x: auto;
+
+      border: 1px solid #e2e8f0;
+
+      border-radius: 15px;
+
+      background: white;
+    }
+
+    table {
+      width: 100%;
+
+      border-collapse: collapse;
+
+      min-width: 650px;
+    }
+
+    th {
+      background: #f8fafc;
+
+      color: #64748b;
+
+      font-size: 12px;
+
+      text-transform: uppercase;
+
+      letter-spacing: .5px;
+
+      padding: 14px;
+
+      text-align: left;
+    }
+
+    td {
+      padding: 14px;
+
+      border-top: 1px solid #f1f5f9;
+
+      font-size: 14px;
+    }
+
+    td:first-child {
+      font-weight: 700;
+    }
+
+    /* Recommendations */
+
+    .recommendation {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
+      gap: 15px;
+    }
+
+    .recommendation-card {
+      padding: 20px;
+
+      border-radius: 15px;
+
+      background: #f8fafc;
+
+      border: 1px solid #e2e8f0;
+    }
+
+    .recommendation-card .icon {
+      font-size: 24px;
+
+      margin-bottom: 10px;
+    }
+
+    .recommendation-card h3 {
+      margin: 0 0 5px;
+
+      font-size: 16px;
+    }
+
+    .recommendation-card p {
+      margin: 0;
+
+      color: #64748b;
+
+      line-height: 1.5;
+
+      font-size: 14px;
+    }
+
+    /* Footer */
+
+    .footer {
+      text-align: center;
+
+      color: #94a3b8;
+
+      font-size: 13px;
+
+      margin-top: 25px;
+    }
+
+    /* Error */
+
+    #error {
+      display: none;
+
+      padding: 25px;
+
+      color: #991b1b;
+
+      background: #fef2f2;
+
+      border: 1px solid #fecaca;
+
+      border-radius: 14px;
+
+      margin: 25px;
+    }
+
+    /* Responsive */
+
+    @media (max-width: 800px) {
+
+      .stats {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+    }
+
+    @media (max-width: 550px) {
+
+      .container {
+        padding-top: 25px;
+      }
+
+      .results,
+      .card-top {
+        padding: 20px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .recommendation {
+        grid-template-columns: 1fr;
+      }
+
+      .run-button {
+        width: 100%;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+
+  <header class="header">
+
+    <div class="badge">
+      🟢 Google Apps Script Demo
+    </div>
+
+    <h1>
+      Daily Weather Alert
+    </h1>
+
+    <p class="subtitle">
+      An automated weather monitoring system that
+      analyzes tomorrow's forecast and provides
+      actionable weather alerts, recommendations,
+      email reports and SMS notifications.
+    </p>
+
+  </header>
+
+
+  <!-- Main -->
+
+  <main class="main-card">
+
+    <div class="card-top">
+
+      <div class="location">
+
+        <div class="location-icon">
+          📍
+        </div>
+
+        <div>
+
+          <h2>
+            Ahmedabad, India
+          </h2>
+
+          <p>
+            Tomorrow's forecast
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <button
+        class="run-button"
+        id="runButton"
+        onclick="loadWeather()">
+
+        🔄 Run Weather Check
+
+      </button>
+
+    </div>
+
+
+    <!-- Loading -->
+
+    <div id="loading">
+
+      <div class="spinner"></div>
+
+      <strong>
+        Fetching latest weather data...
+      </strong>
+
+      <p style="color:#64748b;">
+        Calling OpenWeather API and processing forecast
+      </p>
+
+    </div>
+
+
+    <!-- Error -->
+
+    <div id="error"></div>
+
+
+    <!-- Results -->
+
+    <div id="results">
+
+      <div class="results">
+
+        <!-- Date -->
+
+        <div style="
+          color:#64748b;
+          margin-bottom:18px;
+          font-size:14px;
+        " id="forecastDate">
+        </div>
+
+
+        <!-- Stats -->
+
+        <div class="stats">
+
+          <div class="stat">
+
+            <div class="stat-label">
+              Temperature
+            </div>
+
+            <div class="stat-value"
+                 id="temperature">
+              —
+            </div>
+
+          </div>
+
+
+          <div class="stat">
+
+            <div class="stat-label">
+              Average
+            </div>
+
+            <div class="stat-value"
+                 id="average">
+              —
+            </div>
+
+          </div>
+
+
+          <div class="stat">
+
+            <div class="stat-label">
+              Humidity
+            </div>
+
+            <div class="stat-value"
+                 id="humidity">
+              —
+            </div>
+
+          </div>
+
+
+          <div class="stat">
+
+            <div class="stat-label">
+              Wind
+            </div>
+
+            <div class="stat-value"
+                 id="wind">
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Alert -->
+
+        <div id="alert"
+             class="alert">
+
+          <div class="alert-title">
+            ⚠️ Weather Alert
+          </div>
+
+          <div id="alertMessage"></div>
+
+        </div>
+
+
+        <!-- Chart -->
+
+        <section class="section">
+
+          <div class="section-title">
+
+            <h2>
+              📈 Temperature Trend
+            </h2>
+
+          </div>
+
+          <div class="chart-container">
+
+            <img id="chart"
+                 alt="Temperature trend">
+
+          </div>
+
+        </section>
+
+
+        <!-- Forecast -->
+
+        <section class="section">
+
+          <div class="section-title">
+
+            <h2>
+              🕐 Forecast
+            </h2>
+
+          </div>
+
+
+          <div class="table-wrapper">
+
+            <table>
+
+              <thead>
+
+                <tr>
+
+                  <th>Time</th>
+
+                  <th>Temp</th>
+
+                  <th>Feels Like</th>
+
+                  <th>Conditions</th>
+
+                  <th>Wind</th>
+
+                  <th>Rain</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="forecastTable">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+        <!-- Recommendations -->
+
+        <section class="section">
+
+          <div class="section-title">
+
+            <h2>
+              💡 Recommendations
+            </h2>
+
+          </div>
+
+
+          <div class="recommendation">
+
+            <div class="recommendation-card">
+
+              <div class="icon">
+                👕
+              </div>
+
+              <h3>
+                Clothing
+              </h3>
+
+              <p id="clothing">
+                —
+              </p>
+
+            </div>
+
+
+            <div class="recommendation-card">
+
+              <div class="icon">
+                ☀️
+              </div>
+
+              <h3>
+                Outdoor Activity
+              </h3>
+
+              <p id="activity">
+                —
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <footer class="footer">
+
+    Powered by Google Apps Script · OpenWeather · QuickChart
+
+  </footer>
+
+</div>
+
+
+<script>
+
+  function loadWeather() {
+
+    const button =
+      document.getElementById("runButton");
+
+    const loading =
+      document.getElementById("loading");
+
+    const results =
+      document.getElementById("results");
+
+    const error =
+      document.getElementById("error");
+
+
+    // Reset
+
+    results.style.display = "none";
+
+    error.style.display = "none";
+
+    loading.style.display = "block";
+
+    button.disabled = true;
+
+    button.textContent =
+      "⏳ Loading...";
+
+
+    google.script.run
+
+      .withSuccessHandler(function(report) {
+
+        displayWeather(report);
+
+        loading.style.display = "none";
+
+        results.style.display = "block";
+
+        button.disabled = false;
+
+        button.textContent =
+          "🔄 Refresh Weather";
+
+      })
+
+      .withFailureHandler(function(err) {
+
+        loading.style.display = "none";
+
+        error.style.display = "block";
+
+        error.innerHTML =
+          "<strong>Something went wrong.</strong><br><br>" +
+          escapeHtml(err.message);
+
+        button.disabled = false;
+
+        button.textContent =
+          "🔄 Try Again";
+
+      })
+
+      .getWeatherReport();
+
+  }
+
+
+  function displayWeather(report) {
+
+    document.getElementById("forecastDate")
+      .textContent =
+      "Forecast for " + report.date;
+
+
+    document.getElementById("temperature")
+      .textContent =
+      report.temperature.min +
+      "°C – " +
+      report.temperature.max +
+      "°C";
+
+
+    document.getElementById("average")
+      .textContent =
+      report.temperature.average +
+      "°C";
+
+
+    document.getElementById("humidity")
+      .textContent =
+      report.humidity + "%";
+
+
+    document.getElementById("wind")
+      .textContent =
+      report.wind + " km/h";
+
+
+    // Chart
+
+    document.getElementById("chart")
+      .src = report.chartUrl;
+
+
+    // Alert
+
+    const alert =
+      document.getElementById("alert");
+
+    const alertMessage =
+      document.getElementById("alertMessage");
+
+
+    if (report.alert.type !== "normal") {
+
+      alert.style.display = "block";
+
+      alert.className =
+        "alert " +
+        report.alert.type;
+
+      alertMessage.textContent =
+        report.alert.message;
+
+    } else {
+
+      alert.style.display = "none";
+
+    }
+
+
+    // Forecast table
+
+    const table =
+      document.getElementById("forecastTable");
+
+    table.innerHTML = "";
+
+
+    report.forecasts.forEach(function(f) {
+
+      const row =
+        document.createElement("tr");
+
+      row.innerHTML = `
+
+        <td>
+          ${escapeHtml(f.time)}
+        </td>
+
+        <td>
+          <strong>
+            ${escapeHtml(String(f.temp))}°C
+          </strong>
+        </td>
+
+        <td>
+          ${escapeHtml(String(f.feels_like))}°C
+        </td>
+
+        <td>
+          ${escapeHtml(f.description)}
+        </td>
+
+        <td>
+          ${escapeHtml(String(f.wind))} km/h
+        </td>
+
+        <td>
+          ${escapeHtml(String(f.pop))}%
+        </td>
+
+      `;
+
+      table.appendChild(row);
+
+    });
+
+
+    // Clothing
+
+    document.getElementById("clothing")
+      .textContent =
+      report.clothing;
+
+
+    // Activity
+
+    if (report.temperature.max > 35) {
+
+      document.getElementById("activity")
+        .textContent =
+        "Avoid outdoor activities between 11 AM and 4 PM.";
+
+    } else {
+
+      document.getElementById("activity")
+        .textContent =
+        "Normal outdoor activities should be comfortable.";
+
+    }
+
+  }
+
+
+  function escapeHtml(value) {
+
+    return String(value)
+
+      .replace(/&/g, "&amp;")
+
+      .replace(/</g, "&lt;")
+
+      .replace(/>/g, "&gt;")
+
+      .replace(/"/g, "&quot;")
+
+      .replace(/'/g, "&#039;");
+
+  }
+
+
+  // Automatically load the weather when the page opens.
+  window.addEventListener(
+    "load",
+    loadWeather
+  );
+
+</script>
+
+</body>
+
+</html>
