@@ -21,10 +21,13 @@ function doGet() {
           box-shadow: 0 10px 40px rgba(0,0,0,.08);
         ">
           <div style="font-size: 50px;">🌤️</div>
+
           <h1>Weather Alert System</h1>
+
           <p style="color: #667085;">
             Google Apps Script Web App is working!
           </p>
+
           <p style="color: #12b76a; font-weight: bold;">
             ✓ Deployment successful
           </p>
